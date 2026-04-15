@@ -122,11 +122,7 @@ if "%IS_ADMIN%"=="1" (
     echo %BLD%%CYN%  --- System Caches [Admin] ------------------------%RST%
     echo.
     call :clean_dir "Prefetch            " "C:\Windows\Prefetch"
-    net stop wuauserv >nul 2>&1
-    net stop bits     >nul 2>&1
     call :clean_dir "WU Download Cache   " "C:\Windows\SoftwareDistribution\Download"
-    net start wuauserv >nul 2>&1
-    net start bits     >nul 2>&1
     echo.
 )
 
