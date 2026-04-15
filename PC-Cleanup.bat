@@ -53,7 +53,6 @@ echo %DIM%    Windows Error Reports ^(user + system^)%RST%
 echo %DIM%    Recycle Bin%RST%
 if "%IS_ADMIN%"=="1" (
     echo %DIM%    Prefetch cache      ^(C:\Windows\Prefetch^)%RST%
-    echo %DIM%    Windows Update download cache%RST%
 )
 echo %DIM%    DNS cache           ^(flushed via ipconfig^)%RST%
 echo.
@@ -122,7 +121,6 @@ if "%IS_ADMIN%"=="1" (
     echo %BLD%%CYN%  --- System Caches [Admin] ------------------------%RST%
     echo.
     call :clean_dir "Prefetch            " "C:\Windows\Prefetch"
-    call :clean_dir "WU Download Cache   " "C:\Windows\SoftwareDistribution\Download"
     echo.
 )
 
