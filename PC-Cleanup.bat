@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 >nul
 setlocal EnableDelayedExpansion
 title PC Temp Cleaner v2.0
 
@@ -9,31 +8,34 @@ title PC Temp Cleaner v2.0
 ::  Run as Administrator for full cleanup (Prefetch, WU cache).
 :: ================================================================
 
-:: ── ANSI color setup (Windows 10 1607+) ─────────────────────────
-reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
-for /F "delims=" %%E in ('echo prompt $E^| cmd /q /c') do set "ESC=%%E"
-set "RST=%ESC%[0m"
-set "BLD=%ESC%[1m"
-set "DIM=%ESC%[2m"
-set "GRN=%ESC%[92m"
-set "YLW=%ESC%[93m"
-set "CYN=%ESC%[96m"
-set "WHT=%ESC%[97m"
+:: -- ANSI color setup --------------------------------------------
+::    Uses PowerShell to get the ESC character reliably.
+::    Colors degrade to empty strings if PowerShell is unavailable.
+for /f "usebackq" %%a in (`powershell -NoProfile -Command "[char]27"`) do set "ESC=%%a"
+if defined ESC (
+    set "RST=!ESC![0m"
+    set "BLD=!ESC![1m"
+    set "DIM=!ESC![2m"
+    set "GRN=!ESC![92m"
+    set "YLW=!ESC![93m"
+    set "CYN=!ESC![96m"
+    set "WHT=!ESC![97m"
+)
 
 cls
 echo.
-echo %BLD%%CYN%  ╔══════════════════════════════════════════════════╗%RST%
-echo %BLD%%CYN%  ║          PC  TEMP  CLEANER   v2.0               ║%RST%
-echo %BLD%%CYN%  ╚══════════════════════════════════════════════════╝%RST%
+echo %BLD%%CYN%  +=============================================+%RST%
+echo %BLD%%CYN%  ^|      PC  TEMP  CLEANER   v2.0             ^|%RST%
+echo %BLD%%CYN%  +=============================================+%RST%
 echo.
 
-:: ── Admin check ──────────────────────────────────────────────────
+:: -- Admin check -------------------------------------------------
 set "IS_ADMIN=0"
 fsutil dirty query %SystemDrive% >nul 2>&1
 if not errorlevel 1 set "IS_ADMIN=1"
 
 if "%IS_ADMIN%"=="1" (
-    echo %GRN%  [+] Running as Administrator — full cleanup enabled.%RST%
+    echo %GRN%  [+] Running as Administrator - full cleanup enabled.%RST%
 ) else (
     echo %YLW%  [!] Not running as Administrator.%RST%
     echo %DIM%      Prefetch and Windows Update cache will be skipped.%RST%
@@ -42,7 +44,7 @@ if "%IS_ADMIN%"=="1" (
 )
 echo.
 
-:: ── What will be cleaned ─────────────────────────────────────────
+:: -- What will be cleaned ----------------------------------------
 echo %WHT%  Cleanup targets:%RST%
 echo %DIM%    User Temp           ^(%TEMP%^)%RST%
 echo %DIM%    Windows Temp        ^(C:\Windows\Temp^)%RST%
@@ -60,15 +62,15 @@ echo %YLW%  antivirus scans, or active software installations.%RST%
 echo %YLW%  Locked files are automatically skipped.%RST%
 echo.
 
-:: ── 10-second countdown (in-place) ──────────────────────────────
+:: -- 10-second countdown -----------------------------------------
 for /l %%i in (10,-1,1) do (
-    <nul set /p "=  %WHT%Starting in %%i seconds...%RST%  ^(Ctrl+C to cancel^)   %ESC%[1G"
+    <nul set /p "=  %WHT%Starting in %%i seconds...%RST%  [Ctrl+C to cancel]   %ESC%[1G"
     timeout /t 1 /nobreak >nul
 )
 <nul set /p "=%ESC%[2K%ESC%[1G"
 echo.
 
-:: ── Log file setup ───────────────────────────────────────────────
+:: -- Log file setup ----------------------------------------------
 set "LOGFILE=%~dp0cleanup.log"
 set "TIMESTAMP=%DATE% %TIME%"
 for /f "usebackq delims=" %%T in (
@@ -83,7 +85,7 @@ for /f "usebackq delims=" %%T in (
     echo ================================================
 ) > "%LOGFILE%"
 
-:: ── Disk space before cleanup ────────────────────────────────────
+:: -- Disk space before cleanup -----------------------------------
 set "MB_BEFORE=0"
 for /f "usebackq" %%S in (
     `powershell -NoProfile -NonInteractive -Command "[math]::Round((Get-PSDrive C).Free/1MB)"`
@@ -93,9 +95,9 @@ set "TOTAL_DEL=0"
 set "TOTAL_SKIP=0"
 
 :: ================================================================
-::  PHASE 1 — Temp Directories
+::  PHASE 1 - Temp Directories
 :: ================================================================
-echo %BLD%%CYN%  ─── Temp Files ────────────────────────────────────%RST%
+echo %BLD%%CYN%  --- Temp Files -----------------------------------%RST%
 echo.
 call :clean_dir "User Temp           " "%TEMP%"
 call :clean_dir "Windows Temp        " "C:\Windows\Temp"
@@ -103,9 +105,9 @@ call :clean_dir "LocalAppData Temp   " "%LOCALAPPDATA%\Temp"
 echo.
 
 :: ================================================================
-::  PHASE 2 — Windows Error Reports
+::  PHASE 2 - Windows Error Reports
 :: ================================================================
-echo %BLD%%CYN%  ─── Windows Error Reports ─────────────────────────%RST%
+echo %BLD%%CYN%  --- Windows Error Reports ------------------------%RST%
 echo.
 call :clean_dir "WER Archive (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportArchive"
 call :clean_dir "WER Queue   (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportQueue"
@@ -114,10 +116,10 @@ call :clean_dir "WER Queue   (System)" "%PROGRAMDATA%\Microsoft\Windows\WER\Repo
 echo.
 
 :: ================================================================
-::  PHASE 3 — System Caches (Administrator only)
+::  PHASE 3 - System Caches (Administrator only)
 :: ================================================================
 if "%IS_ADMIN%"=="1" (
-    echo %BLD%%CYN%  ─── System Caches [Admin] ─────────────────────────%RST%
+    echo %BLD%%CYN%  --- System Caches [Admin] ------------------------%RST%
     echo.
     call :clean_dir "Prefetch            " "C:\Windows\Prefetch"
     net stop wuauserv >nul 2>&1
@@ -129,9 +131,9 @@ if "%IS_ADMIN%"=="1" (
 )
 
 :: ================================================================
-::  PHASE 4 — Recycle Bin and DNS Cache
+::  PHASE 4 - Recycle Bin and DNS Cache
 :: ================================================================
-echo %BLD%%CYN%  ─── Recycle Bin and DNS ───────────────────────────%RST%
+echo %BLD%%CYN%  --- Recycle Bin and DNS --------------------------%RST%
 echo.
 
 <nul set /p "=  %CYN%[-]%RST%  Recycle Bin              "
@@ -155,14 +157,14 @@ for /f "usebackq" %%S in (
 ) do set "MB_AFTER=%%S"
 set /a MB_FREED=MB_AFTER - MB_BEFORE
 
-echo %BLD%%CYN%  ─── Summary ───────────────────────────────────────%RST%
+echo %BLD%%CYN%  --- Summary --------------------------------------%RST%
 echo.
 echo   %WHT%Files deleted  : %BLD%%GRN%!TOTAL_DEL!%RST%
 echo   %WHT%Files skipped  : %DIM%!TOTAL_SKIP! ^(in use / locked^)%RST%
 if !MB_FREED! GTR 0 (
     echo   %WHT%Space freed    : %BLD%%GRN%~!MB_FREED! MB%RST%
 ) else (
-    echo   %WHT%Space freed    : %DIM%recalculating — check disk properties manually%RST%
+    echo   %WHT%Space freed    : %DIM%recalculating - check disk properties manually%RST%
 )
 echo   %WHT%Log saved to   : %DIM%%LOGFILE%%RST%
 echo.
@@ -187,7 +189,7 @@ choice /c YN /m "  Reboot now? (Y=Yes  N=No) "
 if "!errorlevel!"=="2" goto :no_reboot
 
 echo.
-echo %YLW%  Rebooting in 30 seconds.  To cancel, open a new cmd and run:  shutdown /a%RST%
+echo %YLW%  Rebooting in 30 seconds.  To cancel, run in a new cmd:  shutdown /a%RST%
 shutdown /r /f /t 30
 goto :end
 
@@ -206,9 +208,8 @@ exit /b 0
 ::  :clean_dir  "<label>"  "<path>"
 ::
 ::  Deletes all files recursively under <path>, prints one status
-::  line, cleans up empty subdirectories, and adds to TOTAL_DEL
-::  and TOTAL_SKIP. <label> should be padded to 20 chars for
-::  consistent column alignment.
+::  line, removes empty subdirectories, and adds to TOTAL_DEL /
+::  TOTAL_SKIP. Label should be padded to 20 chars for alignment.
 :: ================================================================
 :clean_dir
 set "CD_LABEL=%~1"
