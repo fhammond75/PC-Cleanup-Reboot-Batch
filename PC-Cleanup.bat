@@ -50,7 +50,6 @@ echo %DIM%    User Temp           ^(%TEMP%^)%RST%
 echo %DIM%    Windows Temp        ^(C:\Windows\Temp^)%RST%
 echo %DIM%    LocalAppData Temp%RST%
 echo %DIM%    Windows Error Reports ^(user + system^)%RST%
-echo %DIM%    Recycle Bin%RST%
 if "%IS_ADMIN%"=="1" (
     echo %DIM%    Prefetch cache      ^(C:\Windows\Prefetch^)%RST%
 )
@@ -125,15 +124,10 @@ if "%IS_ADMIN%"=="1" (
 )
 
 :: ================================================================
-::  PHASE 4 - Recycle Bin and DNS Cache
+::  PHASE 4 - DNS Cache
 :: ================================================================
-echo %BLD%%CYN%  --- Recycle Bin and DNS --------------------------%RST%
+echo %BLD%%CYN%  --- DNS ----------------------------------------------%RST%
 echo.
-
-<nul set /p "=  %CYN%[-]%RST%  Recycle Bin              "
-powershell -NoProfile -NonInteractive -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue" >nul 2>&1
-echo %GRN%emptied%RST%
-echo Recycle Bin: emptied >> "%LOGFILE%"
 
 <nul set /p "=  %CYN%[-]%RST%  DNS cache                "
 ipconfig /flushdns >nul 2>&1
