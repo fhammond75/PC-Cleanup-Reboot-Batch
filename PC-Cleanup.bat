@@ -221,7 +221,7 @@ set "CD_SKIP=0"
 
 if not exist "%CD_PATH%" (
     echo %DIM%not found, skipped%RST%
-    echo %CD_LABEL%: not found >> "%LOGFILE%"
+    echo !CD_LABEL!: not found >> "%LOGFILE%"
     exit /b 0
 )
 
