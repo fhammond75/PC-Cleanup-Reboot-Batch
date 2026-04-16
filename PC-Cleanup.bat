@@ -195,7 +195,7 @@ exit /b 0
 
 :: ================================================================
 ::  :clean_dir  "<label>"  "<path>"
-::
+::  Sir_McStuffin_Special
 ::  Deletes all files recursively under <path>, prints one status
 ::  line, removes empty subdirectories, and adds to TOTAL_DEL /
 ::  TOTAL_SKIP. Label should be padded to 20 chars for alignment.
