@@ -211,7 +211,7 @@ set "CD_SKIP=0"
 if not exist "%CD_PATH%" (
     echo %DIM%not found, skipped%RST%
     echo !CD_LABEL!: not found >> "%LOGFILE%"
-    exit /b 0
+    goto :eof
 )
 
 for /r "%CD_PATH%" %%F in (*) do (
@@ -229,4 +229,4 @@ echo %GRN%!CD_DEL! deleted%RST%  %DIM%!CD_SKIP! skipped%RST%
 set /a TOTAL_DEL+=CD_DEL
 set /a TOTAL_SKIP+=CD_SKIP
 echo %CD_LABEL%: !CD_DEL! deleted, !CD_SKIP! skipped >> "%LOGFILE%"
-exit /b 0
+goto :eof
