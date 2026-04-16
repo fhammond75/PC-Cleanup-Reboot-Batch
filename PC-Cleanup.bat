@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-title PC Temp Cleaner v2.0
+title NUKE IT FROM ORBIT
 
 :: ================================================================
 ::  PC TEMP CLEANER  v2.0
@@ -25,7 +25,8 @@ if defined ESC (
 cls
 echo.
 echo %BLD%%CYN%  +=============================================+%RST%
-echo %BLD%%CYN%  ^|      PC  TEMP  CLEANER   v2.0             ^|%RST%
+echo %BLD%%CYN%  ^|           NUKE IT FROM ORBIT               ^|%RST%
+echo %BLD%%CYN%  ^|      it's the only way to be sure.         ^|%RST%
 echo %BLD%%CYN%  +=============================================+%RST%
 echo.
 
@@ -77,7 +78,7 @@ for /f "usebackq delims=" %%T in (
 
 (
     echo ================================================
-    echo  PC Temp Cleaner v2.0
+    echo  NUKE IT FROM ORBIT
     echo  Run: %TIMESTAMP%
     echo  Admin: %IS_ADMIN%
     echo ================================================
