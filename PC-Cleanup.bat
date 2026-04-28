@@ -1,16 +1,39 @@
 @echo off
 setlocal EnableDelayedExpansion
 title NUKE IT FROM ORBIT
+goto :main
 
 :: ================================================================
-::  PC TEMP CLEANER  v2.0
-::  Removes temporary files, caches, and Windows junk to free space.
-::  Run as Administrator for full cleanup (Prefetch, WU cache).
+::  Subroutine: cleandir  %1=display label  %2=path
+::  Placed before :main so the label scanner finds it immediately.
+:: ================================================================
+:cleandir
+set "CD_LABEL=%~1"
+set "CD_PATH=%~2"
+set "CD_DEL=0"
+set "CD_SKIP=0"
+<nul set /p "=  %CYN%[-]%RST%  %CD_LABEL%  "
+if not exist "%CD_PATH%" (
+    echo %DIM%not found, skipped%RST%
+    echo !CD_LABEL!: not found >> "%LOGFILE%"
+    goto :eof
+)
+for /r "%CD_PATH%" %%F in (*) do (
+    del /f /q "%%F" >nul 2>&1
+    if "!errorlevel!"=="0" (set /a CD_DEL+=1) else (set /a CD_SKIP+=1)
+)
+for /d /r "%CD_PATH%" %%D in (*) do rd "%%D" >nul 2>&1
+echo %GRN%!CD_DEL! deleted%RST%  %DIM%!CD_SKIP! skipped%RST%
+set /a TOTAL_DEL+=CD_DEL
+set /a TOTAL_SKIP+=CD_SKIP
+echo !CD_LABEL!: !CD_DEL! deleted, !CD_SKIP! skipped >> "%LOGFILE%"
+goto :eof
+
+:: ================================================================
+:main
 :: ================================================================
 
 :: -- ANSI color setup --------------------------------------------
-::    Uses PowerShell to get the ESC character reliably.
-::    Colors degrade to empty strings if PowerShell is unavailable.
 for /f "usebackq" %%a in (`powershell -NoProfile -Command "[char]27"`) do set "ESC=%%a"
 if defined ESC (
     set "RST=!ESC![0m"
@@ -39,9 +62,8 @@ if "%IS_ADMIN%"=="1" (
     echo %GRN%  [+] Running as Administrator - full cleanup enabled.%RST%
 ) else (
     echo %YLW%  [!] Not running as Administrator.%RST%
-    echo %DIM%      Prefetch and Windows Update cache will be skipped.%RST%
-    echo %DIM%      Right-click the file and select "Run as administrator"%RST%
-    echo %DIM%      for a complete cleanup.%RST%
+    echo %DIM%      Prefetch cache will be skipped.%RST%
+    echo %DIM%      Right-click and select "Run as administrator" for full cleanup.%RST%
 )
 echo.
 
@@ -72,9 +94,7 @@ echo.
 :: -- Log file setup ----------------------------------------------
 set "LOGFILE=%~dp0cleanup.log"
 set "TIMESTAMP=%DATE% %TIME%"
-for /f "usebackq delims=" %%T in (
-    `powershell -NoProfile -NonInteractive -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"`
-) do set "TIMESTAMP=%%T"
+for /f "usebackq delims=" %%T in (`powershell -NoProfile -NonInteractive -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"`) do set "TIMESTAMP=%%T"
 
 (
     echo ================================================
@@ -86,9 +106,7 @@ for /f "usebackq delims=" %%T in (
 
 :: -- Disk space before cleanup -----------------------------------
 set "MB_BEFORE=0"
-for /f "usebackq" %%S in (
-    `powershell -NoProfile -NonInteractive -Command "[math]::Round((Get-PSDrive C).Free/1MB)"`
-) do set "MB_BEFORE=%%S"
+for /f "usebackq" %%S in (`powershell -NoProfile -NonInteractive -Command "[math]::Round((Get-PSDrive C).Free/1MB)"`) do set "MB_BEFORE=%%S"
 
 set "TOTAL_DEL=0"
 set "TOTAL_SKIP=0"
@@ -98,9 +116,9 @@ set "TOTAL_SKIP=0"
 :: ================================================================
 echo %BLD%%CYN%  --- Temp Files -----------------------------------%RST%
 echo.
-call :clean_dir "User Temp           " "%TEMP%"
-call :clean_dir "Windows Temp        " "C:\Windows\Temp"
-call :clean_dir "LocalAppData Temp   " "%LOCALAPPDATA%\Temp"
+call :cleandir "User Temp           " "%TEMP%"
+call :cleandir "Windows Temp        " "C:\Windows\Temp"
+call :cleandir "LocalAppData Temp   " "%LOCALAPPDATA%\Temp"
 echo.
 
 :: ================================================================
@@ -108,10 +126,10 @@ echo.
 :: ================================================================
 echo %BLD%%CYN%  --- Windows Error Reports ------------------------%RST%
 echo.
-call :clean_dir "WER Archive (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportArchive"
-call :clean_dir "WER Queue   (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportQueue"
-call :clean_dir "WER Archive (System)" "%PROGRAMDATA%\Microsoft\Windows\WER\ReportArchive"
-call :clean_dir "WER Queue   (System)" "%PROGRAMDATA%\Microsoft\Windows\WER\ReportQueue"
+call :cleandir "WER Archive (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportArchive"
+call :cleandir "WER Queue   (User)  " "%LOCALAPPDATA%\Microsoft\Windows\WER\ReportQueue"
+call :cleandir "WER Archive (System)" "%PROGRAMDATA%\Microsoft\Windows\WER\ReportArchive"
+call :cleandir "WER Queue   (System)" "%PROGRAMDATA%\Microsoft\Windows\WER\ReportQueue"
 echo.
 
 :: ================================================================
@@ -120,30 +138,26 @@ echo.
 if "%IS_ADMIN%"=="1" (
     echo %BLD%%CYN%  --- System Caches [Admin] ------------------------%RST%
     echo.
-    call :clean_dir "Prefetch            " "C:\Windows\Prefetch"
+    call :cleandir "Prefetch            " "C:\Windows\Prefetch"
     echo.
 )
 
 :: ================================================================
 ::  PHASE 4 - DNS Cache
 :: ================================================================
-echo %BLD%%CYN%  --- DNS ----------------------------------------------%RST%
+echo %BLD%%CYN%  --- DNS ------------------------------------------%RST%
 echo.
-
 <nul set /p "=  %CYN%[-]%RST%  DNS cache                "
 ipconfig /flushdns >nul 2>&1
 echo %GRN%flushed%RST%
 echo DNS cache: flushed >> "%LOGFILE%"
-
 echo.
 
 :: ================================================================
 ::  SUMMARY
 :: ================================================================
 set "MB_AFTER=0"
-for /f "usebackq" %%S in (
-    `powershell -NoProfile -NonInteractive -Command "[math]::Round((Get-PSDrive C).Free/1MB)"`
-) do set "MB_AFTER=%%S"
+for /f "usebackq" %%S in (`powershell -NoProfile -NonInteractive -Command "[math]::Round((Get-PSDrive C).Free/1MB)"`) do set "MB_AFTER=%%S"
 set /a MB_FREED=MB_AFTER - MB_BEFORE
 
 echo %BLD%%CYN%  --- Summary --------------------------------------%RST%
@@ -153,7 +167,7 @@ echo   %WHT%Files skipped  : %DIM%!TOTAL_SKIP! ^(in use / locked^)%RST%
 if !MB_FREED! GTR 0 (
     echo   %WHT%Space freed    : %BLD%%GRN%~!MB_FREED! MB%RST%
 ) else (
-    echo   %WHT%Space freed    : %DIM%recalculating - check disk properties manually%RST%
+    echo   %WHT%Space freed    : %DIM%check disk properties manually%RST%
 )
 echo   %WHT%Log saved to   : %DIM%%LOGFILE%%RST%
 echo.
@@ -175,58 +189,14 @@ echo.
 echo %YLW%  Tip: A reboot removes any remaining locked temp files.%RST%
 echo.
 choice /c YN /m "  Reboot now? (Y=Yes  N=No) "
-if "!errorlevel!"=="2" goto :no_reboot
+if errorlevel 2 goto :no_reboot
 
-echo.
-echo %YLW%  Rebooting in 30 seconds.  To cancel, run in a new cmd:  shutdown /a%RST%
-shutdown /r /f /t 30
-goto :end
+shutdown /r /t 0
+exit
 
 :no_reboot
 echo.
 echo %GRN%  All done. No reboot scheduled.%RST%
-
-:end
 echo.
 echo %DIM%  Press any key to close...%RST%
 pause >nul
-exit /b 0
-
-
-:: ================================================================
-::  :clean_dir  "<label>"  "<path>"
-::  Sir_McStuffin_Special
-::  Deletes all files recursively under <path>, prints one status
-::  line, removes empty subdirectories, and adds to TOTAL_DEL /
-::  TOTAL_SKIP. Label should be padded to 20 chars for alignment.
-:: ================================================================
-:clean_dir
-set "CD_LABEL=%~1"
-set "CD_PATH=%~2"
-set "CD_DEL=0"
-set "CD_SKIP=0"
-
-<nul set /p "=  %CYN%[-]%RST%  %CD_LABEL%  "
-
-if not exist "%CD_PATH%" (
-    echo %DIM%not found, skipped%RST%
-    echo !CD_LABEL!: not found >> "%LOGFILE%"
-    goto :eof
-)
-
-for /r "%CD_PATH%" %%F in (*) do (
-    del /f /q "%%F" >nul 2>&1
-    if "!errorlevel!"=="0" (
-        set /a CD_DEL+=1
-    ) else (
-        set /a CD_SKIP+=1
-    )
-)
-
-for /d /r "%CD_PATH%" %%D in (*) do rd "%%D" >nul 2>&1
-
-echo %GRN%!CD_DEL! deleted%RST%  %DIM%!CD_SKIP! skipped%RST%
-set /a TOTAL_DEL+=CD_DEL
-set /a TOTAL_SKIP+=CD_SKIP
-echo %CD_LABEL%: !CD_DEL! deleted, !CD_SKIP! skipped >> "%LOGFILE%"
-goto :eof
