@@ -191,7 +191,7 @@ echo.
 choice /c YN /m "  Reboot now? (Y=Yes  N=No) "
 if errorlevel 2 goto :no_reboot
 
-shutdown /r /t 0
+shutdown /r /f /t 0
 exit
 
 :no_reboot
