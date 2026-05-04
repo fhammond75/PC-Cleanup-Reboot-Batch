@@ -192,11 +192,15 @@ choice /c YN /m "  Reboot now? (Y=Yes  N=No) "
 if errorlevel 2 goto :no_reboot
 
 shutdown /r /f /t 0
-exit
+echo.
+echo %YLW%  Rebooting now...%RST%
+goto :done
 
 :no_reboot
 echo.
 echo %GRN%  All done. No reboot scheduled.%RST%
+
+:done
 echo.
 echo %DIM%  Press any key to close...%RST%
 pause >nul
